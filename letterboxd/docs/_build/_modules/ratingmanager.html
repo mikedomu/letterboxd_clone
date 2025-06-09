@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ratingmanager &#8212; letterboxd_clone 0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=27fed22d" />
+    <script src="../_static/documentation_options.js?v=8dde47fa"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for ratingmanager</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Module managing movie ratings.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">sqlite3</span>
+
+<div class="viewcode-block" id="RatingManager">
+<a class="viewcode-back" href="../ratingmanager.html#ratingmanager.RatingManager">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">RatingManager</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Class managing movie ratings in the database.</span>
+
+<span class="sd">    :param cursor: SQLite database cursor.</span>
+<span class="sd">    :type cursor: sqlite3.Cursor</span>
+<span class="sd">    :param conn: SQLite database connection.</span>
+<span class="sd">    :type conn: sqlite3.Connection</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cursor</span><span class="p">,</span> <span class="n">conn</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initializes the movie rating manager.</span>
+
+<span class="sd">        :param cursor: SQLite database cursor.</span>
+<span class="sd">        :type cursor: sqlite3.Cursor</span>
+<span class="sd">        :param conn: SQLite database connection.</span>
+<span class="sd">        :type conn: sqlite3.Connection</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cursor</span> <span class="o">=</span> <span class="n">cursor</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">conn</span> <span class="o">=</span> <span class="n">conn</span>
+
+<div class="viewcode-block" id="RatingManager.add_or_update_rating">
+<a class="viewcode-back" href="../ratingmanager.html#ratingmanager.RatingManager.add_or_update_rating">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_or_update_rating</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_id</span><span class="p">,</span> <span class="n">movie_id</span><span class="p">,</span> <span class="n">rating</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Adds or updates a movie rating by user.</span>
+
+<span class="sd">        :param user_id: User ID.</span>
+<span class="sd">        :type user_id: int</span>
+<span class="sd">        :param movie_id: Movie ID.</span>
+<span class="sd">        :type movie_id: int</span>
+<span class="sd">        :param rating: Movie rating (0.5-5.0).</span>
+<span class="sd">        :type rating: float</span>
+<span class="sd">        :return: True if operation succeeded, False otherwise.</span>
+<span class="sd">        :rtype: bool</span>
+<span class="sd">        :raises sqlite3.Error: In case of database error.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">                INSERT INTO ratings (user_id, movie_id, rating)</span>
+<span class="s2">                VALUES (?, ?, ?)</span>
+<span class="s2">                ON CONFLICT(user_id, movie_id)</span>
+<span class="s2">                DO UPDATE SET rating = excluded.rating</span>
+<span class="s2">            &quot;&quot;&quot;</span><span class="p">,</span> <span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="n">movie_id</span><span class="p">,</span> <span class="n">rating</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">except</span> <span class="n">sqlite3</span><span class="o">.</span><span class="n">Error</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Database error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span></div>
+
+
+<div class="viewcode-block" id="RatingManager.delete_rating">
+<a class="viewcode-back" href="../ratingmanager.html#ratingmanager.RatingManager.delete_rating">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">delete_rating</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_id</span><span class="p">,</span> <span class="n">movie_id</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Deletes a movie rating.</span>
+
+<span class="sd">        :param user_id: User ID.</span>
+<span class="sd">        :type user_id: int</span>
+<span class="sd">        :param movie_id: Movie ID.</span>
+<span class="sd">        :type movie_id: int</span>
+<span class="sd">        :raises sqlite3.Error: In case of rating deletion error.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">                DELETE FROM ratings </span>
+<span class="s2">                WHERE user_id = ? AND movie_id = ?</span>
+<span class="s2">            &quot;&quot;&quot;</span><span class="p">,</span> <span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="n">movie_id</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+        <span class="k">except</span> <span class="n">sqlite3</span><span class="o">.</span><span class="n">Error</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error deleting rating: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="RatingManager.get_user_rated_movies">
+<a class="viewcode-back" href="../ratingmanager.html#ratingmanager.RatingManager.get_user_rated_movies">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_user_rated_movies</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_id</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Retrieves all movies rated by user.</span>
+
+<span class="sd">        :param user_id: User ID.</span>
+<span class="sd">        :type user_id: int</span>
+<span class="sd">        :return: List of tuples (movie title, rating).</span>
+<span class="sd">        :rtype: list[tuple]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">            SELECT m.title, r.rating</span>
+<span class="s2">            FROM ratings r</span>
+<span class="s2">            JOIN movies m ON r.movie_id = m.id</span>
+<span class="s2">            WHERE r.user_id = ?</span>
+<span class="s2">            ORDER BY r.rating DESC</span>
+<span class="s2">        &quot;&quot;&quot;</span><span class="p">,</span> <span class="p">(</span><span class="n">user_id</span><span class="p">,))</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">cursor</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="RatingManager.get_movie_id_by_title">
+<a class="viewcode-back" href="../ratingmanager.html#ratingmanager.RatingManager.get_movie_id_by_title">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_movie_id_by_title</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">title</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Retrieves movie ID by its title.</span>
+
+<span class="sd">        :param title: Movie title.</span>
+<span class="sd">        :type title: str</span>
+<span class="sd">        :return: Movie ID or None if not found.</span>
+<span class="sd">        :rtype: int or None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;SELECT id FROM movies WHERE title = ?&quot;</span><span class="p">,</span> <span class="p">(</span><span class="n">title</span><span class="p">,))</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cursor</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">result</span> <span class="k">else</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="RatingManager.get_rating">
+<a class="viewcode-back" href="../ratingmanager.html#ratingmanager.RatingManager.get_rating">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_rating</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_id</span><span class="p">,</span> <span class="n">movie_id</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Retrieves movie rating given by user.</span>
+
+<span class="sd">        :param user_id: User ID.</span>
+<span class="sd">        :type user_id: int</span>
+<span class="sd">        :param movie_id: Movie ID.</span>
+<span class="sd">        :type movie_id: int</span>
+<span class="sd">        :return: Movie rating or 0 if not found.</span>
+<span class="sd">        :rtype: float</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">            SELECT rating FROM ratings </span>
+<span class="s2">            WHERE user_id = ? AND movie_id = ?</span>
+<span class="s2">        &quot;&quot;&quot;</span><span class="p">,</span> <span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="n">movie_id</span><span class="p">))</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cursor</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">result</span> <span class="k">else</span> <span class="mi">0</span></div>
+</div>
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">letterboxd_clone</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../modules.html">src</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2025, mikedom.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.2.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
